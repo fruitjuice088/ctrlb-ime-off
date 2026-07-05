@@ -1,0 +1,45 @@
+name: release
+
+# Build ctrlb-ime-off in CI and publish it as a GitHub Release on tag push (v*).
+# Every run uploads a workflow artifact; a tag additionally publishes the Release.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          rustup update stable
+          rustup default stable
+          cargo build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ctrlb-ime-off
+          path: target/release/ctrlb-ime-off.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --repo "${{ github.repository }}" \
+            --title "${{ github.ref_name }}" \
+            --generate-notes \
+            artifacts/ctrlb-ime-off/ctrlb-ime-off.exe

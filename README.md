@@ -1,16 +1,16 @@
 # ctrlb-ime-off
 
-WezTerm (`wezterm-gui.exe`) が前面のとき、Ctrl-B 押下で IME を OFF にしてから Ctrl-B をアプリへ送る常駐ツール。
-
-tmux の prefix キー (Ctrl-B) が IME ON のまま押されて Composition に吸われ、tmux に届かない問題への対処。
+WezTerm が前面のとき、Ctrl-B 押下で IME を OFF にしてから Ctrl-B をアプリへ送る常駐ツール。tmux の prefix キー (Ctrl-B) が IME ON のまま押されて Composition に吸われ、tmux に届かない問題への対処。
 
 ## 動作
 
-- グローバルな低レベルキーボードフック (`WH_KEYBOARD_LL`) で Ctrl-B を監視する。
-- 前面ウィンドウが `wezterm-gui.exe` のときだけ、元の Ctrl-B を握りつぶし、IME を OFF にしたうえで Ctrl-B を送り直す。
-- 対象外のウィンドウ・対象外のキーには一切干渉しない。
-- タスクトレイアイコン・コンソールウィンドウは生成しない。
-- 多重起動防止のミューテックスを持つ。二重起動時は何もせず終了する。
+| | Windows | macOS |
+|---|---|---|
+| キーボードフック | `WH_KEYBOARD_LL` | `CGEventTap` |
+| 実行判定 | プロセス名 `wezterm-gui.exe` | bundle identifier `com.github.wez.wezterm` |
+| IME OFF | `WM_IME_CONTROL` で直接切り替え | 受信イベントを英数keycodeにして送信 |
+| 多重起動防止 | 名前付きミューテックス | `flock` |
+| 権限 | - | Input Monitoring |
 
 ## ビルド
 
@@ -18,9 +18,11 @@ tmux の prefix キー (Ctrl-B) が IME ON のまま押されて Composition に
 cargo build --release
 ```
 
-生成物: `target\release\ctrlb-ime-off.exe`
+生成物: Windows は `target\release\ctrlb-ime-off.exe`、macOS は `target/release/ctrlb-ime-off`。
 
 ## 導入
+
+### Windows
 
 `startup.bat` 等から他の常駐ツールと同様に起動する。
 
@@ -28,10 +30,14 @@ cargo build --release
 start "" "<このリポジトリのパス>\ctrlb-ime-off\target\release\ctrlb-ime-off.exe"
 ```
 
+### macOS
+
+`LaunchAgent` から常駐起動する。System Settings > Privacy & Security > Input Monitoring で本ツールに権限付与が必要。
+
 ## 終了
 
-タスクマネージャーからプロセスを終了する。専用の終了コマンド・トレイメニューは持たない。
+直接プロセスをkillする。
 
 ## ログ
 
-`SendInput` やフック登録などの失敗時のみ、exe と同じディレクトリに `ctrlb-ime-off.log` を出力する。平常時は何も出力しない。
+キーイベント送出やフック登録などの失敗時のみ、実行ファイルと同じディレクトリに `ctrlb-ime-off.log` を出力する。

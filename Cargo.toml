@@ -7,7 +7,7 @@ edition = "2021"
 name = "ctrlb-ime-off"
 path = "src/main.rs"
 
-[dependencies]
+[target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61", features = [
     "Win32_Foundation",
     "Win32_Security",
@@ -17,6 +17,13 @@ windows-sys = { version = "0.61", features = [
     "Win32_UI_Input_KeyboardAndMouse",
     "Win32_UI_Input_Ime",
 ] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
+objc2 = "0.6"
+objc2-app-kit = "0.3"
+objc2-core-foundation = "0.3"
+objc2-core-graphics = "0.3"
 
 [profile.release]
 opt-level = "z"

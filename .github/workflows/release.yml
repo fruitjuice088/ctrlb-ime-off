@@ -13,7 +13,16 @@ permissions:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            bin: ctrlb-ime-off.exe
+            asset: ctrlb-ime-off.exe
+          - os: macos-latest
+            bin: ctrlb-ime-off
+            asset: ctrlb-ime-off-macos
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - name: Build
@@ -21,10 +30,13 @@ jobs:
           rustup update stable
           rustup default stable
           cargo build --release
+      - name: Rename to release asset name
+        shell: bash
+        run: mv "target/release/${{ matrix.bin }}" "target/release/${{ matrix.asset }}"
       - uses: actions/upload-artifact@v4
         with:
-          name: ctrlb-ime-off
-          path: target/release/ctrlb-ime-off.exe
+          name: ${{ matrix.asset }}
+          path: target/release/${{ matrix.asset }}
 
   release:
     if: startsWith(github.ref, 'refs/tags/')
@@ -34,6 +46,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           path: artifacts
+          merge-multiple: true
       - name: Publish release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -42,4 +55,4 @@ jobs:
             --repo "${{ github.repository }}" \
             --title "${{ github.ref_name }}" \
             --generate-notes \
-            artifacts/ctrlb-ime-off/ctrlb-ime-off.exe
+            artifacts/*
